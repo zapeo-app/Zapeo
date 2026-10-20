@@ -274,6 +274,7 @@ body.pmode #pbar { display: flex; grid-area: bar; gap: 8px; padding: 6px 14px 10
 .dposter { flex: none; width: 100%; aspect-ratio: 2 / 3; border-radius: 1em; overflow: hidden; display: grid; place-items: center; font-weight: 700; box-shadow: 0 1em 3em rgba(0,0,0,.6); }
 .dini { font-size: 4em; }
 .dposter img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dposter.land { aspect-ratio: 16 / 9; }
 .dmain { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1em; text-shadow: 0 1px 8px rgba(0,0,0,.6); }
 .dmain h1 { margin: 0; font-size: 3em; line-height: 1.1; font-weight: 700; }
 .dmeta { display: flex; flex-wrap: wrap; gap: .4em 1.4em; font-size: 1.5em; color: var(--fg); }
@@ -3044,7 +3045,7 @@ var qrcode = function() {
 <script>
 "use strict";
 
-const VERSION = "0.20.1";
+const VERSION = "0.20.3";
 
 /* ---------- Parser M3U y clasificación ---------- */
 // PARSER_START
@@ -3856,6 +3857,7 @@ function renderAll() {
 
 function renderTabs() {
   $("#main").className = "tab-" + state.tab;
+  if (state.tab === "series") seriesCovers();
   document.body.classList.toggle("pmode", state.tab !== "live");
   $$(".tab").forEach((b) => {
     const t = b.dataset.tab;
@@ -3887,7 +3889,7 @@ function renderGroups() {
 function logoHTML(x, name) {
   const initial = esc((String(name).trim()[0] || "?").toUpperCase());
   if (!x.logo) return initial;
-  return `<img src="${esc(x.logo)}" data-i="${initial}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode(this.dataset.i))">`;
+  return `<img src="${esc(x.logo)}" data-i="${initial}" data-o="${esc(x._logo0 || "")}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;this.dataset.o='';return}this.replaceWith(document.createTextNode(this.dataset.i))">`;
 }
 
 function isPlaying(x) {
@@ -4092,10 +4094,54 @@ async function seriesLookup(x, show) {
   }
   return found;
 }
+// Carteles verticales de las series: la lista M3U suele traer una escena de un episodio; el servidor (Xtream) da el cartel de la serie.
+let covKey = "";
+async function seriesCovers() {
+  const shows = state.byType.series;
+  if (!shows.length) return;
+  const x = xtreamOf(shows[0].episodes[0]);
+  if (!x) return;
+  const key = lists.current + "|" + shows.length;
+  if (key === covKey) return;
+  covKey = key;
+  try {
+    const all = await xCached(`${x.base}|${x.user}|sall`, async () => slimSeries(await xApi(x, "get_series")), 3 * 864e5);
+    if (!Array.isArray(all) || key !== covKey) return;
+    const map = new Map();
+    for (const e of all) { const c = e && e.cover; if (c && /^https?:/i.test(c)) { const k = simp(e.name); if (k && !map.has(k)) map.set(k, c); } }
+    let n = 0;
+    for (const sh of shows) {
+      const c = map.get(simp(sh.name));
+      if (!c || sh._logo0) continue;
+      sh._logo0 = sh.logo || "";
+      sh.logo = hiRes(c, 500);
+      n++;
+    }
+    if (n && state.tab === "series") {
+      $$("#chlist .ch[data-i]").forEach((el) => {
+        const it = state.view[+el.dataset.i];
+        const img = el.querySelector(".pimg img");
+        if (it && it._logo0 !== undefined && it.logo && img && img.getAttribute("src") !== it.logo) { img.dataset.o = it._logo0; img.src = it.logo; }
+      });
+    }
+  } catch { covKey = ""; }
+}
 // Las imágenes de TMDB admiten varios tamaños: si la lista trae una pequeña, se pide la grande (si falla, se usa la original).
 function hiRes(u, w) {
   const m = /^(.*\/t\/p\/)(?:w(\d+)|h\d+)(?:_[^/]*)?(\/.*)$/i.exec(String(u || ""));
   return m && /image\.tmdb\.org/i.test(u) && (!m[2] || +m[2] < w) ? m[1] + "w" + w + m[3] : String(u || "");
+}
+// Si la imagen es apaisada (una escena, no un cartel), no se recorta: se usa el cartel vertical de la ficha si lo hay; si no, se muestra entera.
+function posterFit(img) {
+  const box = img.parentElement;
+  if (!box || !img.naturalWidth) return;
+  const wide = img.naturalWidth > img.naturalHeight * 1.1;
+  const cov = box.id === "dPoster" && det.info && det.info.cover;
+  if (wide && cov && !img.dataset.sw && cov !== img.dataset.o) {
+    img.dataset.sw = "1"; img.dataset.o = cov; img.src = hiRes(cov, 500);
+    return;
+  }
+  box.classList.toggle("land", wide);
 }
 function normInfo(i) {
   i = i || {};
@@ -4251,7 +4297,7 @@ function renderDetail(info, note) {
     bg.style.backgroundImage = `url("${hiRes(info.backdrop, 1280).replace(/"/g, "%22")}"), url("${info.backdrop.replace(/"/g, "%22")}")`;
     bg.classList.add("on");
   }
-  if (info && info.cover && !it.logo && !$("#dPoster img")) $("#dPoster").innerHTML = `<img src="${esc(hiRes(info.cover, 500))}" data-o="${esc(info.cover)}" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;return}this.remove()">`;
+  if (info && info.cover && !it.logo && !$("#dPoster img")) $("#dPoster").innerHTML = `<img src="${esc(hiRes(info.cover, 500))}" data-o="${esc(info.cover)}" onload="posterFit(this)" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;return}this.remove()">`;
   const dg = $("#dDiag");
   dg.hidden = !cfg.diag;
   dg.textContent = note && info ? "info: " + note : note ? "info: " + note : "";
@@ -4264,9 +4310,10 @@ function openDetail(item, list, focusId) {
   const isShow = item.kind === "show";
   const h = hue(item.name);
   $("#dTitle").textContent = item.name;
+  $("#dPoster").classList.remove("land");
   $("#dPoster").style.background = `linear-gradient(160deg,hsl(${h},40%,30%),hsl(${(h + 40) % 360},40%,15%))`;
   $("#dPoster").innerHTML = item.logo
-    ? `<img src="${esc(hiRes(item.logo, 500))}" data-o="${esc(item.logo)}" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;return}this.replaceWith(Object.assign(document.createElement('span'),{className:'dini',textContent:this.dataset.i}))" data-i="${esc(Array.from(item.name)[0] || "?")}">`
+    ? `<img src="${esc(hiRes(item.logo, 500))}" data-o="${esc(item.logo)}" onload="posterFit(this)" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;return}this.replaceWith(Object.assign(document.createElement('span'),{className:'dini',textContent:this.dataset.i}))" data-i="${esc(Array.from(item.name)[0] || "?")}">`
     : `<span class="dini">${esc(Array.from(item.name)[0] || "?")}</span>`;
   $("#dBg").classList.remove("on");
   $("#dBg").style.backgroundImage = "";
@@ -4285,6 +4332,7 @@ function openDetail(item, list, focusId) {
   getInfo(item).then((r) => {
     if (seq !== det.seq || $("#detail").hidden) return;
     det.info = r.info;
+    { const im = $("#dPoster img"); if (im && im.complete) posterFit(im); }
     renderDetail(r.info, r.info ? "" : "No hay más datos de este título en la lista.");
     $("#dDiag").hidden = !cfg.diag;
     $("#dDiag").textContent = "info: " + r.note;
@@ -4376,9 +4424,10 @@ function openEps(show, focusEp) {
   eps.last = show.episodes.indexOf(cur);
   const h = hue(show.name);
   $("#eTitle").textContent = show.name;
+  $("#ePoster").classList.remove("land");
   $("#ePoster").style.background = `linear-gradient(160deg,hsl(${h},40%,30%),hsl(${(h + 40) % 360},40%,15%))`;
   $("#ePoster").innerHTML = show.logo
-    ? `<img src="${esc(hiRes(show.logo, 500))}" data-o="${esc(show.logo)}" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;return}this.remove()">`
+    ? `<img src="${esc(hiRes(show.logo, 500))}" data-o="${esc(show.logo)}" onload="posterFit(this)" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;return}this.remove()">`
     : `<span class="dini">${esc(Array.from(show.name)[0] || "?")}</span>`;
   const bg = $("#eBg");
   const bd = det.info && det.info.backdrop;
