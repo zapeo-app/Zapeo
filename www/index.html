@@ -3044,7 +3044,7 @@ var qrcode = function() {
 <script>
 "use strict";
 
-const VERSION = "0.20.0";
+const VERSION = "0.20.1";
 
 /* ---------- Parser M3U y clasificación ---------- */
 // PARSER_START
@@ -4092,6 +4092,11 @@ async function seriesLookup(x, show) {
   }
   return found;
 }
+// Las imágenes de TMDB admiten varios tamaños: si la lista trae una pequeña, se pide la grande (si falla, se usa la original).
+function hiRes(u, w) {
+  const m = /^(.*\/t\/p\/)(?:w(\d+)|h\d+)(?:_[^/]*)?(\/.*)$/i.exec(String(u || ""));
+  return m && /image\.tmdb\.org/i.test(u) && (!m[2] || +m[2] < w) ? m[1] + "w" + w + m[3] : String(u || "");
+}
 function normInfo(i) {
   i = i || {};
   const one = (v) => { v = Array.isArray(v) ? v[0] : v; v = v === undefined || v === null ? "" : String(v).trim(); return v === "0" || v === "[]" ? "" : v; };
@@ -4243,10 +4248,10 @@ function renderDetail(info, note) {
   $("#dTrailer").dataset.url = tr;
   if (info && info.backdrop && /^https?:/i.test(info.backdrop)) {
     const bg = $("#dBg");
-    bg.style.backgroundImage = `url("${info.backdrop.replace(/"/g, "%22")}")`;
+    bg.style.backgroundImage = `url("${hiRes(info.backdrop, 1280).replace(/"/g, "%22")}"), url("${info.backdrop.replace(/"/g, "%22")}")`;
     bg.classList.add("on");
   }
-  if (info && info.cover && !it.logo && !$("#dPoster img")) $("#dPoster").innerHTML = `<img src="${esc(info.cover)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`;
+  if (info && info.cover && !it.logo && !$("#dPoster img")) $("#dPoster").innerHTML = `<img src="${esc(hiRes(info.cover, 500))}" data-o="${esc(info.cover)}" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;return}this.remove()">`;
   const dg = $("#dDiag");
   dg.hidden = !cfg.diag;
   dg.textContent = note && info ? "info: " + note : note ? "info: " + note : "";
@@ -4261,7 +4266,7 @@ function openDetail(item, list, focusId) {
   $("#dTitle").textContent = item.name;
   $("#dPoster").style.background = `linear-gradient(160deg,hsl(${h},40%,30%),hsl(${(h + 40) % 360},40%,15%))`;
   $("#dPoster").innerHTML = item.logo
-    ? `<img src="${esc(item.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'dini',textContent:this.dataset.i}))" data-i="${esc(Array.from(item.name)[0] || "?")}">`
+    ? `<img src="${esc(hiRes(item.logo, 500))}" data-o="${esc(item.logo)}" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;return}this.replaceWith(Object.assign(document.createElement('span'),{className:'dini',textContent:this.dataset.i}))" data-i="${esc(Array.from(item.name)[0] || "?")}">`
     : `<span class="dini">${esc(Array.from(item.name)[0] || "?")}</span>`;
   $("#dBg").classList.remove("on");
   $("#dBg").style.backgroundImage = "";
@@ -4284,11 +4289,18 @@ function openDetail(item, list, focusId) {
     $("#dDiag").hidden = !cfg.diag;
     $("#dDiag").textContent = "info: " + r.note;
     const names = r.info && r.info.cast ? r.info.cast.split(/\s*,\s*/).map((x) => x.trim()).filter((x) => x.length > 1).slice(0, 18) : [];
-    const diag = () => { if (cfg.diag && seq === det.seq) { $("#dDiag").hidden = false; $("#dDiag").textContent += "\n" + tmdbNote; } };
+    const diag = () => { if (cfg.diag && seq === det.seq) { $("#dDiag").hidden = false; const im = $("#dPoster img"); $("#dDiag").textContent += "\n" + tmdbNote + "\ncartel: " + (im ? (im.currentSrc || im.src).replace(/^https?:\/\//, "").slice(0, 90) + " · " + im.naturalWidth + "x" + im.naturalHeight : "sin imagen"); } };
     if (names.length) {
       renderNames(names);
       fillPhotos(names, seq).then(diag);
-      if (!(r.info && r.info.plot)) getCast(item, r.info).then((c) => { if (seq === det.seq && c && c.overview) $("#dPlot").textContent = c.overview; });
+      // si la lista trae pocos nombres, se completa con el reparto de TMDB (los que tienen foto)
+      if (names.length < 18 || !(r.info && r.info.plot)) getCast(item, r.info).then((c) => {
+        if (seq !== det.seq || $("#detail").hidden || !c) return;
+        if (c.overview && !(r.info && r.info.plot)) $("#dPlot").textContent = c.overview;
+        const have = new Set(names.map(norm));
+        const more = (Array.isArray(c.cast) ? c.cast : []).filter((a) => a && okPath(a.p) && !have.has(norm(a.n))).slice(0, 18 - names.length);
+        if (more.length) { $("#dActs").insertAdjacentHTML("beforeend", more.map(actHtml).join("")); tmdbCredit(true); }
+      });
     } else {
       getCast(item, r.info).then((c) => { if (seq !== det.seq || $("#detail").hidden) return; renderActors(c); diag(); });
     }
@@ -4366,7 +4378,7 @@ function openEps(show, focusEp) {
   $("#eTitle").textContent = show.name;
   $("#ePoster").style.background = `linear-gradient(160deg,hsl(${h},40%,30%),hsl(${(h + 40) % 360},40%,15%))`;
   $("#ePoster").innerHTML = show.logo
-    ? `<img src="${esc(show.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`
+    ? `<img src="${esc(hiRes(show.logo, 500))}" data-o="${esc(show.logo)}" alt="" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o;return}this.remove()">`
     : `<span class="dini">${esc(Array.from(show.name)[0] || "?")}</span>`;
   const bg = $("#eBg");
   const bd = det.info && det.info.backdrop;
