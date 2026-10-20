@@ -296,7 +296,7 @@ body.pmode #pbar { display: flex; grid-area: bar; gap: 8px; padding: 6px 14px 10
 .dbtns { display: flex; flex-wrap: wrap; gap: 1em; margin-top: 1.2em; }
 #detail .dbtns .btn { font-size: 1.6em; padding: .55em 1.3em; border-radius: .5em; text-shadow: none; }
 #detail .dbtns .btn:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 .2em rgba(var(--accent-rgb), .55); transform: scale(1.05); }
-.ddiag { color: var(--muted); font-size: 1em; font-family: ui-monospace, Consolas, monospace; }
+.ddiag { color: var(--muted); font-size: 1em; white-space: pre-line; font-family: ui-monospace, Consolas, monospace; }
 
 /* Pantalla de episodios */
 .ewrap { position: relative; z-index: 1; display: flex; gap: 2.5em; padding: 2.5em 3.5em; height: 100vh; box-sizing: border-box; align-items: stretch; }
@@ -3040,7 +3040,7 @@ var qrcode = function() {
 <script>
 "use strict";
 
-const VERSION = "0.19.1";
+const VERSION = "0.19.2";
 
 /* ---------- Parser M3U y clasificación ---------- */
 // PARSER_START
@@ -4135,21 +4135,26 @@ function cleanTitle(n) {
   return String(n).replace(/\(\d{4}\)/g, " ").replace(/\[[^\]]*\]/g, " ").replace(/^\s*[A-Za-z]{2,3}\s*[-:|]\s+/, "")
     .replace(/\s+[-–|]\s*(4K|UHD|FHD|HD|SD|MULTI|LATINO|CAST\w*|ESP\w*|DUAL)\b.*$/i, "").replace(/\s+/g, " ").trim();
 }
+let tmdbNote = "";
 async function getCast(item, info) {
-  if (!MB || !cfg.tmdb) return null;
+  tmdbNote = "";
+  if (!MB) { tmdbNote = "tmdb: sin buzón configurado"; return null; }
+  if (!cfg.tmdb) { tmdbNote = "tmdb: desactivado en Ajustes"; return null; }
   const title = cleanTitle(item.name);
-  if (title.length < 2) return null;
+  if (title.length < 2) { tmdbNote = "tmdb: título demasiado corto"; return null; }
   const q = new URLSearchParams({ t: title, k: item.kind === "show" ? "tv" : "movie" });
   const ym = String((info && info.year) || (String(item.name).match(/\((\d{4})\)/) || [])[1] || "").match(/\d{4}/);
   if (ym) q.set("y", ym[0]);
   try {
-    return await xCached("tmdb|" + q, async () => {
-      const r = await withTimeout(fetch(MB + "/api/cast?" + q), 9000);
-      if (r.status === 404) return { cast: [] };
-      if (!r.ok) throw new Error("tmdb " + r.status);
-      return await r.json();
+    const c = await xCached("tmdb|" + q, async () => {
+      const txt = await withTimeout(fetchText(MB + "/api/cast?" + q), 9000); // fetch, y si falla, el cliente HTTP nativo
+      let j; try { j = JSON.parse(txt); } catch { throw new Error("respuesta no válida"); }
+      if (!j || !Array.isArray(j.cast)) throw new Error("respuesta no válida");
+      return j;
     }, 14 * 864e5);
-  } catch { return null; }
+    tmdbNote = "tmdb: «" + title + "» " + (ym ? ym[0] : "") + " · " + c.cast.length + " actores con foto";
+    return c;
+  } catch (e) { tmdbNote = "tmdb: «" + title + "» · error: " + (e && e.message || e); return null; }
 }
 function renderActors(c) {
   const box = $("#dActs");
@@ -4236,7 +4241,11 @@ function openDetail(item, list, focusId) {
     renderDetail(r.info, r.info ? "" : "No hay más datos de este título en la lista.");
     $("#dDiag").hidden = !cfg.diag;
     $("#dDiag").textContent = "info: " + r.note;
-    getCast(item, r.info).then((c) => { if (seq === det.seq && !$("#detail").hidden) renderActors(c); });
+    getCast(item, r.info).then((c) => {
+      if (seq !== det.seq || $("#detail").hidden) return;
+      renderActors(c);
+      if (cfg.diag) { $("#dDiag").hidden = false; $("#dDiag").textContent += "\n" + tmdbNote; }
+    });
   });
 }
 function closeDetail() {
