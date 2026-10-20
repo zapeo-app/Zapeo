@@ -1,0 +1,12 @@
+{
+  "appId": "com.zapeo.player",
+  "appName": "Zapeo",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
