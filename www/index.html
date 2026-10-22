@@ -472,6 +472,161 @@ dialog .actions.wrap { flex-wrap: wrap; justify-content: flex-start; }
   .screen { max-height: none; }
 }
 @media (prefers-reduced-motion: reduce) { #osd { transition: none; } }
+
+/* Título largo: al enfocarlo se desplaza para poder leerlo entero */
+@keyframes mq { 0%, 18% { text-indent: 0; } 82%, 100% { text-indent: calc(var(--d) * -1); } }
+.mq { text-overflow: clip !important; animation: mq var(--t, 6s) ease-in-out infinite alternate; }
+
+/* Barra inferior, solo en móvil */
+#mnav, #tcl, #shelfX { display: none; }
+
+/* ===== Modo móvil (pantalla táctil pequeña) ===== */
+body.mob { display: grid; overflow: hidden; height: 100%; padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
+html:has(body.mob) { height: 100%; }
+body.mob .hints { display: none; }
+body.mob #mnav {
+  display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; height: calc(58px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom); background: var(--panel); border-top: 1px solid var(--line);
+}
+#mnav button { flex: 1; min-width: 0; border: 0; background: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 0; -webkit-tap-highlight-color: transparent; }
+#mnav svg { width: 24px; height: 24px; }
+#mnav button.on { color: var(--accent); }
+body.mob.pfs #mnav { display: none; }
+body.mob .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
+body.mob .ov { font-size: 14px; padding: 16px 14px; gap: 16px; }
+body.mob #home, body.mob #settings { bottom: calc(58px + env(safe-area-inset-bottom)); }
+body.mob #detail, body.mob #eps { z-index: 42; padding: 0; gap: 0; }
+/* Inicio */
+body.mob .logo2 { font-size: 20px; }
+body.mob .logo2 svg { width: 28px; height: 28px; }
+body.mob .ovtop { min-height: 0; }
+body.mob .ovright { gap: 10px; }
+body.mob .lst b { font-size: 13px; max-width: 8em; }
+body.mob .lst small { font-size: 11px; }
+body.mob .roundbtn { width: 40px; height: 40px; }
+body.mob .roundbtn svg { width: 20px; height: 20px; }
+body.mob #homeClock { font-size: 18px; }
+body.mob .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 0; }
+body.mob .tile { min-height: 96px; font-size: 15px; border-radius: 16px; padding: 10px 6px; gap: 6px; }
+body.mob .tile svg { width: 30px; height: 30px; }
+body.mob .tile small { font-size: 11px; }
+body.mob .tile[data-go="settings"] { display: none; }
+body.mob .tile:focus, body.mob .tile:focus-visible { transform: none; border-width: 1px; border-color: rgba(255,255,255,.12); background-color: rgba(255,255,255,.06); box-shadow: none; }
+body.mob .shelf h2 { font-size: 17px; margin-bottom: 8px; }
+body.mob .shelfrow { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px; margin: 0 -14px; padding-left: 14px; padding-right: 14px; scrollbar-width: none; }
+body.mob .shelfrow::-webkit-scrollbar { display: none; }
+body.mob .card { flex: 0 0 132px; scroll-snap-align: start; }
+body.mob .card .pic { height: 78px; }
+body.mob .card .pic b { font-size: 12px; bottom: 8px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+body.mob .card small { font-size: 11px; }
+body.mob .card.lv .pic { background: var(--panel-2); }
+body.mob .card.lv .pic img { object-fit: contain; padding: 10px 10px 26px; }
+body.mob #shelfX { display: block; }
+body.mob #shelfX .shelf, body.mob #shelf { margin: 0; }
+body.mob #shelfX .hint { padding: 4px 0; }
+/* Ajustes */
+body.mob .stiles { grid-template-columns: 1fr; gap: 10px; }
+body.mob .stiles .tile { min-height: 64px; font-size: 16px; padding: 10px 14px; gap: 14px; }
+body.mob .stiles .tile svg { width: 28px; height: 28px; }
+body.mob .ovhead h1 { font-size: 24px; }
+body.mob .attrib { margin: 6px 0 0; font-size: 12px; }
+/* Canales, películas y series: categorías como fila deslizable y lista a pantalla completa */
+body.mob main, body.mob #main.tab-movie, body.mob #main.tab-series { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+body.mob .stage, body.mob #main.tab-movie .stage, body.mob #main.tab-series .stage {
+  position: fixed; left: -300vw; top: 0; width: 640px; height: 360px; padding: 0; border: 0; overflow: visible;
+}
+body.mob #main > .panel:nth-child(1), body.mob #main.tab-movie > .panel:nth-child(1), body.mob #main.tab-series > .panel:nth-child(1),
+body.mob.pgrp #main.tab-movie > .panel:nth-child(1), body.mob.pgrp #main.tab-series > .panel:nth-child(1) {
+  display: block; position: static; width: auto; box-shadow: none; background: none; border: 0; z-index: auto;
+}
+body.mob #main > .panel:nth-child(1) h2 { display: none; }
+body.mob #grplist { display: flex; gap: 8px; overflow: auto hidden; padding: 10px 12px 4px; flex: none; scrollbar-width: none; }
+body.mob #grplist::-webkit-scrollbar { display: none; }
+body.mob .grp { flex: none; width: auto; margin: 0; padding: 8px 14px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); gap: 8px; font-size: 14px; }
+body.mob .grp span:first-child { overflow: visible; }
+body.mob .grp.active { background: rgba(var(--accent-rgb), .25); border-color: var(--accent); box-shadow: none; }
+body.mob .grp .n { font-size: 12px; }
+body.mob #main > .panel:nth-child(2) { border: 0; }
+body.mob #main.tab-movie > .panel:nth-child(2), body.mob #main.tab-series > .panel:nth-child(2) { grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "title bar" "find find" "list list"; }
+body.mob.pmode #pchips, body.mob #pRef { display: none; }
+body.mob.pmode #pbar { padding: 6px 12px 0 0; justify-content: flex-end; flex-wrap: nowrap; }
+body.mob .panel h2 { padding: 8px 14px 4px; }
+body.mob #main.tab-movie #chTitle, body.mob #main.tab-series #chTitle { font-size: 22px; padding: 6px 14px 4px; }
+body.mob #pbar .btn { padding: 8px 14px; font-size: 14px; }
+body.mob #pGrp, body.mob #pFind, body.mob #pHome { display: none; }
+body.mob #main.tab-movie .searchwrap, body.mob #main.tab-series .searchwrap { display: block; }
+body.mob .searchwrap { padding: 4px 12px 8px; }
+body.mob #search { padding: 11px 14px; font-size: 16px; border-radius: 10px; }
+body.mob .scroll { max-height: none; }
+body.mob .ch { padding: 9px 8px; gap: 12px; }
+body.mob .logo { width: 48px; height: 48px; }
+body.mob .tab-movie .logo, body.mob .tab-series .logo { width: 44px; height: 62px; }
+body.mob .meta b { font-size: 16px; }
+body.mob .star { padding: 12px 14px; font-size: 20px; }
+body.mob #chlist.posters { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 14px 10px; padding: 6px 12px 16px; }
+body.mob .ptxt b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 12.5px; line-height: 1.25; }
+body.mob .row.poster .star { display: block; padding: 2px 8px; font-size: 15px; }
+body.mob .pimg { font-size: 28px; }
+/* Ficha y episodios */
+body.mob .dwrap { flex-direction: column; gap: 16px; padding: 20px 16px 28px; }
+body.mob .dleft { width: 100%; flex-direction: row; gap: 14px; align-items: flex-end; }
+body.mob .dposter { width: 38%; flex: none; }
+body.mob .dbtns { flex: 1; min-width: 0; gap: 8px; }
+body.mob #detail .dbtns .btn { font-size: 15px; padding: 10px 12px; }
+body.mob .dmain h1 { font-size: 24px; }
+body.mob .dmeta { font-size: 14px; gap: 4px 12px; }
+body.mob .dgenre { font-size: 13px; }
+body.mob .dplot { font-size: 14px; -webkit-line-clamp: 9; max-width: none; }
+body.mob .dcast { font-size: 13px; max-width: none; }
+body.mob .dacts { grid-template-columns: repeat(4, minmax(0, 1fr)); max-height: none; gap: 10px 6px; }
+body.mob .act .ph { width: 58px; height: 58px; }
+body.mob .act b { font-size: 12px; }
+body.mob .act small { font-size: 11px; }
+body.mob .ewrap { flex-direction: column; height: 100%; padding: 14px 12px 8px; gap: 10px; }
+body.mob .eleft { width: 100%; flex-direction: row; align-items: center; gap: 12px; }
+body.mob .eleft .dposter { width: 64px; flex: none; }
+body.mob .eleft h2 { font-size: 18px; flex: 1; min-width: 0; }
+body.mob #eps .btn { font-size: 14px; padding: 8px 12px; }
+body.mob .eseas { order: 1; flex-direction: row; width: 100%; overflow: auto hidden; gap: 8px; padding: 2px; }
+body.mob .sea { font-size: 14px; padding: 8px 14px; white-space: nowrap; }
+body.mob .elist { order: 2; flex: 1 1 0; min-height: 0; gap: 8px; }
+body.mob .ethumb { width: 36vw; }
+body.mob .enum { font-size: 1.6em; }
+body.mob .etxt b { font-size: 15px; }
+body.mob .eplot { font-size: 12.5px; -webkit-line-clamp: 2; }
+body.mob .etxt small { font-size: 12px; }
+
+/* ===== Reproductor táctil (móvil, o tablet/pantalla táctil al tocarla) ===== */
+body.touch #seek, body.touch #ptitle, body.touch #osd, body.touch .screen.paused::after { display: none !important; }
+body.touch.pfs #tcl, body.touch .screen:fullscreen #tcl { display: block; }
+#tcl { position: absolute; inset: 0; z-index: 8; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.tc { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; opacity: 0; pointer-events: none; transition: opacity .2s; background: rgba(0,0,0,.45); }
+#tcl.show .tc { opacity: 1; pointer-events: auto; }
+.tc button { border: 0; background: none; color: #fff; display: grid; place-items: center; padding: 0; -webkit-tap-highlight-color: transparent; }
+.tc svg { width: 100%; height: 100%; }
+.tc-top { display: flex; align-items: center; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-top)); background: linear-gradient(180deg, rgba(0,0,0,.7), transparent); padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+.tc-top button { width: 44px; height: 44px; flex: none; }
+.tc-top button svg { width: 26px; height: 26px; }
+.tc-t { flex: 1; min-width: 0; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+.tc-t small { display: block; color: var(--accent); font-weight: 700; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.tc-t b { display: block; font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tc-mid { display: flex; align-items: center; justify-content: center; gap: clamp(8px, 5vw, 36px); }
+.tc-mid button { width: 52px; height: 52px; border-radius: 50%; }
+.tc-mid button svg { width: 34px; height: 34px; }
+.tc-mid #tcPlay { width: 68px; height: 68px; background: rgba(255,255,255,.18); }
+.tc-mid #tcPlay svg { width: 40px; height: 40px; }
+.tc-bot { display: flex; align-items: center; gap: 12px; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(0deg, rgba(0,0,0,.75), transparent); font-variant-numeric: tabular-nums; font-size: 13px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+#tcBar { position: relative; flex: 1; height: 34px; touch-action: none; }
+#tcBar::before { content: ""; position: absolute; left: 0; right: 0; top: 15px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.3); }
+#tcFill { position: absolute; left: 0; top: 15px; height: 4px; border-radius: 2px; background: var(--accent); width: 0; }
+#tcThumb { position: absolute; top: 9px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .5); left: 0; }
+#tcl.live .tc-bot { visibility: hidden; }
+#tcl.live #tcB, #tcl.live #tcF { display: none; }
+#tcl.mov #tcPrev, #tcl.mov #tcNext { display: none; }
+#tcLive { display: none; }
+#tcl.live #tcLive { display: block; }
+#tcFlash { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); padding: 10px 18px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; font-size: 16px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .15s; }
+#tcFlash.on { opacity: 1; }
 </style>
 </head>
 <body>
@@ -489,6 +644,14 @@ dialog .actions.wrap { flex-wrap: wrap; justify-content: flex-start; }
   <button class="tab active" type="button" data-tab="live">Directo<span class="n"></span></button>
   <button class="tab" type="button" data-tab="movie">Películas<span class="n"></span></button>
   <button class="tab" type="button" data-tab="series">Series<span class="n"></span></button>
+</nav>
+
+<nav id="mnav" aria-label="Navegación">
+  <button type="button" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Inicio</button>
+  <button type="button" data-nav="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 3l4 3 4-3"/></svg>Canales</button>
+  <button type="button" data-nav="movie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M17 9h4M3 15h4M17 15h4"/></svg>Películas</button>
+  <button type="button" data-nav="series"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="14" height="11" rx="2"/><path d="M7 5h14v11"/></svg>Series</button>
+  <button type="button" data-nav="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.6 2.2 2.7-.5.9 2.6 2.6.9-.5 2.7 2.2 1.6-2.2 1.6.5 2.7-2.6.9-.9 2.6-2.7-.5L12 21.2 10.4 19l-2.7.5-.9-2.6-2.6-.9.5-2.7L2.5 12l2.2-1.6-.5-2.7 2.6-.9.9-2.6 2.7.5z"/></svg>Ajustes</button>
 </nav>
 
 <main id="main" class="tab-live">
@@ -528,6 +691,24 @@ dialog .actions.wrap { flex-wrap: wrap; justify-content: flex-start; }
         </div>
       </div>
       <div id="status">Elige algo para empezar</div>
+      <div id="tcl" class="mov" aria-label="Controles de reproducción">
+        <div class="tc" id="tc">
+          <div class="tc-top">
+            <button type="button" id="tcBack" aria-label="Salir de pantalla completa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+            <div class="tc-t"><small id="tcSub"></small><b id="tcName"></b></div>
+            <button type="button" id="tcFav" aria-label="Favorito"></button>
+          </div>
+          <div class="tc-mid">
+            <button type="button" id="tcPrev" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg></button>
+            <button type="button" id="tcB" aria-label="Atrasar 10 segundos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9L4 8.5"/><path d="M4 4v4.5h4.5"/><text x="12" y="15.6" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor" stroke="none">10</text></svg></button>
+            <button type="button" id="tcPlay" aria-label="Pausa"></button>
+            <button type="button" id="tcF" aria-label="Adelantar 10 segundos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9L20 8.5"/><path d="M20 4v4.5h-4.5"/><text x="12" y="15.6" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor" stroke="none">10</text></svg></button>
+            <button type="button" id="tcNext" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg></button>
+          </div>
+          <div class="tc-bot" id="tcBot"><span id="tcCur">0:00</span><div id="tcBar"><i id="tcFill"></i><u id="tcThumb"></u></div><span id="tcTot">0:00</span></div>
+        </div>
+        <div id="tcFlash"></div>
+      </div>
     </div>
     <div class="now">
       <div class="t"><b id="nowName">Nada en reproducción</b><small id="nowGroup"></small></div>
@@ -556,6 +737,7 @@ dialog .actions.wrap { flex-wrap: wrap; justify-content: flex-start; }
     <h2>Continuar viendo</h2>
     <div class="shelfrow" id="shelfRow"></div>
   </div>
+  <div id="shelfX"></div>
   <div class="hints"><span><kbd>◀ ▶ ▲ ▼</kbd>moverse</span><span><kbd>OK</kbd>elegir</span><span><kbd>Atrás</kbd>salir</span></div>
 </section>
 
@@ -3045,7 +3227,7 @@ var qrcode = function() {
 <script>
 "use strict";
 
-const VERSION = "0.20.3";
+const VERSION = "0.21.0";
 
 /* ---------- Parser M3U y clasificación ---------- */
 // PARSER_START
@@ -3859,6 +4041,7 @@ function renderTabs() {
   $("#main").className = "tab-" + state.tab;
   if (state.tab === "series") seriesCovers();
   document.body.classList.toggle("pmode", state.tab !== "live");
+  mnavSync();
   $$(".tab").forEach((b) => {
     const t = b.dataset.tab;
     b.classList.toggle("active", t === state.tab);
@@ -3882,6 +4065,9 @@ function renderGroups() {
       $("#grplist").innerHTML = items.map((g) =>
         `<button class="grp${g.key === state.group[t] ? " active" : ""}" data-g="${esc(g.key)}"><span>${esc(g.name)}</span><span class="n">${g.n}</span></button>`
       ).join("");
+      // móvil: la categoría activa queda a la vista en la fila deslizable
+      const a = $("#grplist .grp.active"), g = $("#grplist");
+      if (a && document.body.classList.contains("mob")) g.scrollLeft = Math.max(0, a.offsetLeft - (g.clientWidth - a.offsetWidth) / 2);
     }
   );
 }
@@ -4875,6 +5061,8 @@ function playChannel(c, list, at) {
   stopPlayer();
   token++;
   state.current = c;
+  if (c.type === "live") recentPush(c.url);
+  tcRefresh();
   if (list) state.playlist = list;
   setLoading(displayName(c), c.type === "live" ? "Entrando…" : "Cargando…");
   $("#nowName").textContent = displayName(c);
@@ -4971,7 +5159,7 @@ function recover(why) {
   if (s.recoveries >= max) {
     stopPlayer();
     s.ok = false;
-    setStatus((s.live ? "El canal no responde." : "La reproducción se ha parado.") + "\nPulsa Intro sobre el elemento para reintentarlo o elige otro.", true);
+    setStatus((s.live ? "El canal no responde." : "La reproducción se ha parado.") + (document.body.classList.contains("touch") ? "\nToca la pantalla para reintentarlo o vuelve atrás." : "\nPulsa Intro sobre el elemento para reintentarlo o elige otro."), true);
     return;
   }
   s.recoveries++;
@@ -5248,6 +5436,7 @@ function skShow(mode) {
 }
 const isVodPlaying = () => !!(state.current && state.current.type !== "live" && session && session.ok);
 function pauseUI() {
+  tcPlayState();
   const paused = video.paused && !video.ended && !video.seeking && isVodPlaying();
   $("#screen").classList.toggle("paused", paused);
   if (paused && isFs()) { clearTimeout(sk.hideT); if (!sk.mode) skShow("peek"); skUpdate(); }
@@ -5362,6 +5551,7 @@ function isFs() {
 }
 function updateFsBtn() {
   $("#btnFs").textContent = isFs() ? "Salir de pantalla completa" : "Pantalla completa";
+  tcOnFs();
 }
 // Al salir de pantalla completa, una película o episodio se pausa (y queda guardado el punto) en vez de seguir sonando en pequeño.
 function pauseVodOnExit() {
@@ -5383,6 +5573,242 @@ function toggleFs() {
   else if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
 }
 
+/* ---------- Móvil y pantalla táctil ---------- */
+// «mob»: diseño para móvil (pantalla táctil pequeña). «touch»: controles táctiles del reproductor.
+// En una tele no se activa nada: no hay pantalla táctil y el mando sigue igual.
+let touchSeen = store.get("zapeo.touch", "") === "1";
+function envTouch() { return (navigator.maxTouchPoints || 0) > 0 || (window.matchMedia && matchMedia("(pointer: coarse)").matches); }
+function applyMode() {
+  const f = store.get("zapeo.mob", ""); // "1" fuerza el modo móvil, "0" lo desactiva
+  const side = Math.min(screen.width || innerWidth, screen.height || innerHeight);
+  const mob = f === "1" ? true : f === "0" ? false : envTouch() && side <= 500;
+  const touch = mob || touchSeen || (envTouch() && side <= 900);
+  document.body.classList.toggle("mob", mob);
+  document.body.classList.toggle("touch", touch);
+  mnavSync();
+}
+window.addEventListener("pointerdown", (e) => {
+  if (e.pointerType !== "touch" || touchSeen) return;
+  touchSeen = true; store.set("zapeo.touch", "1"); applyMode();
+}, { capture: true, passive: true });
+window.addEventListener("resize", applyMode);
+applyMode();
+
+function mnavSync() {
+  const cur = !$("#home").hidden ? "home" : !$("#settings").hidden ? "settings" : state.tab;
+  $$("#mnav button").forEach((b) => b.classList.toggle("on", b.dataset.nav === cur));
+}
+$("#mnav").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  const n = b.dataset.nav;
+  if (n === "home") showHome();
+  else if (n === "settings") showSettings();
+  else goMain(n);
+});
+
+// Lo último que se ha visto (canales) y favoritos, en el inicio del móvil
+function recentGet() { try { const a = JSON.parse(store.get("zapeo.recent", "[]")); return Array.isArray(a) ? a : []; } catch { return []; } }
+function recentPush(url) {
+  const a = recentGet().filter((u) => u !== url);
+  a.unshift(url);
+  store.set("zapeo.recent", JSON.stringify(a.slice(0, 12)));
+}
+let shelfX = [];
+function renderShelfX() {
+  const box = $("#shelfX");
+  shelfX = [];
+  if (!document.body.classList.contains("mob")) { box.innerHTML = ""; return; }
+  const sub = { live: (it) => it.group || "Canal", movie: () => "Película", series: () => "Serie" };
+  const card = (x) => {
+    const i = shelfX.push(x) - 1, it = x.it, h = hue(it.name);
+    const img = it.logo ? `<img src="${esc(it.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : "";
+    const bg = x.tab === "live" ? "" : ` style="background:linear-gradient(135deg,hsl(${h},45%,32%),hsl(${(h + 40) % 360},45%,16%))"`;
+    return `<button class="card${x.tab === "live" ? " lv" : ""}" type="button" data-x="${i}"><span class="pic"${bg}>${img}<b>${esc(it.name)}</b></span><small>${esc(sub[x.tab](it))}</small></button>`;
+  };
+  const shelf = (title, arr) => (arr.length ? `<div class="shelf"><h2>${title}</h2><div class="shelfrow">${arr.map(card).join("")}</div></div>` : "");
+  const favs = [];
+  for (const t of TABS) { for (const it of state.byType[t]) { if (state.favs.has(favKey(it))) { favs.push({ it, tab: t }); if (favs.length >= 24) break; } } }
+  const order = new Map(recentGet().map((u, i) => [u, i]));
+  const rec = [];
+  if (order.size) for (const it of state.byType.live) if (order.has(it.url)) rec.push({ it, tab: "live", o: order.get(it.url) });
+  rec.sort((a, b) => a.o - b.o);
+  const html = shelf("Canales recientes", rec) + shelf("Favoritos", favs);
+  box.innerHTML = html || `<p class="hint">Aquí aparecerán lo último que veas y tus favoritos.</p>`;
+}
+$("#shelfX").addEventListener("click", (e) => {
+  const b = e.target.closest(".card");
+  const x = b && shelfX[+b.dataset.x];
+  if (!x) return;
+  state.epsBack = null;
+  if (x.tab === "live") openItem(x.it, state.byType.live);
+  else openDetail(x.it, state.byType[x.tab]);
+});
+
+// Controles táctiles sobre el vídeo: un toque muestra u oculta los controles, doble toque a los lados salta 10 s,
+// en directo se cambia de canal deslizando arriba o abajo.
+const IC = {
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/></svg>',
+  starOn: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/></svg>',
+};
+let tcHide = null, tcPend = null, tcDown = null, tcLast = { t: 0, x: 0 }, tcOne = null, tcFlashT = null;
+const tcEl = () => $("#tcl");
+const tcShown = () => tcEl().classList.contains("show");
+const tcLive = () => !state.current || state.current.type === "live";
+function tcFlash(txt) {
+  const f = $("#tcFlash");
+  f.textContent = txt;
+  f.classList.add("on");
+  clearTimeout(tcFlashT);
+  tcFlashT = setTimeout(() => f.classList.remove("on"), 700);
+}
+function tcPlayState() {
+  const b = $("#tcPlay");
+  if (!b) return;
+  const p = video.paused;
+  b.innerHTML = p ? IC.play : IC.pause;
+  b.setAttribute("aria-label", p ? "Reproducir" : "Pausa");
+  if (tcShown()) tcShow(true, p);
+}
+function tcRender() {
+  const c = state.current, el = tcEl();
+  if (!c) return;
+  const live = c.type === "live";
+  el.classList.toggle("live", live);
+  el.classList.toggle("mov", c.type === "movie");
+  $("#tcSub").textContent = live ? "En directo" : c.type === "series" ? epTag(c) || "Serie" : "Película";
+  $("#tcName").textContent = c.type === "series" && c._show ? [c._show.name, c.epTitle].filter(Boolean).join(" · ") : c.name;
+  const t = favTarget(c);
+  $("#tcFav").innerHTML = t && state.favs.has(favKey(t)) ? IC.starOn : IC.star;
+  const b = $("#tcPlay");
+  b.innerHTML = video.paused ? IC.play : IC.pause;
+}
+function tcRefresh() { if (tcShown()) tcRender(); }
+function tcUpdate() {
+  if (!tcShown() || tcLive()) return;
+  const d = skDur(), cur = tcPend !== null ? tcPend : video.currentTime || 0;
+  const p = d ? Math.max(0, Math.min(100, (cur / d) * 100)) : 0;
+  $("#tcFill").style.width = p + "%";
+  $("#tcThumb").style.left = p + "%";
+  $("#tcCur").textContent = fmtT(cur);
+  $("#tcTot").textContent = fmtT(d);
+}
+setInterval(tcUpdate, 250);
+function tcShow(on, hold) {
+  clearTimeout(tcHide);
+  tcEl().classList.toggle("show", on);
+  if (!on) return;
+  tcRender();
+  tcUpdate();
+  if (!hold && !video.paused) tcHide = setTimeout(() => { if (tcPend === null) tcShow(false); }, 4000);
+}
+function lockLandscape(on) {
+  try {
+    const o = screen.orientation;
+    if (!o) return;
+    if (on && o.lock) { const p = o.lock("landscape"); if (p && p.catch) p.catch(() => {}); }
+    else if (!on && o.unlock) o.unlock();
+  } catch {}
+}
+function tcOnFs() {
+  if (!document.body.classList.contains("touch")) return;
+  if (isFs()) { tcShow(true); lockLandscape(true); }
+  else { tcShow(false); lockLandscape(false); }
+}
+function tcSeekBy(s) {
+  const d = skDur();
+  if (!d) return;
+  try { video.currentTime = Math.max(0, Math.min(d - 2, (video.currentTime || 0) + s)); } catch {}
+  tcFlash((s > 0 ? "+" : "−") + Math.abs(s) + " s");
+}
+function tcPlayPause() { if (video.paused) { const p = video.play(); if (p && p.catch) p.catch(() => {}); } else video.pause(); }
+tcEl().addEventListener("pointerdown", (e) => {
+  if (e.target.closest("button, #tcBar")) return;
+  tcDown = { x: e.clientX, y: e.clientY };
+});
+tcEl().addEventListener("pointercancel", () => { tcDown = null; });
+tcEl().addEventListener("pointerup", (e) => {
+  if (!tcDown) return;
+  const dx = e.clientX - tcDown.x, dy = e.clientY - tcDown.y;
+  tcDown = null;
+  if (tcLive() && Math.abs(dy) > 70 && Math.abs(dy) > Math.abs(dx) * 1.5) { // deslizar: cambiar de canal
+    zap(dy < 0 ? 1 : -1);
+    tcFlash(dy < 0 ? "Canal siguiente" : "Canal anterior");
+    tcShow(true);
+    return;
+  }
+  if (Math.abs(dx) > 20 || Math.abs(dy) > 20) return;
+  const now = Date.now(), r = tcEl().getBoundingClientRect(), f = (e.clientX - r.left) / r.width;
+  if (now - tcLast.t < 300 && Math.abs(e.clientX - tcLast.x) < 70) { // doble toque
+    clearTimeout(tcOne);
+    tcLast.t = 0;
+    if (!tcLive() && f < 0.4) tcSeekBy(-10);
+    else if (!tcLive() && f > 0.6) tcSeekBy(10);
+    else { tcPlayPause(); tcFlash(video.paused ? "Reproducir" : "Pausa"); }
+    return;
+  }
+  tcLast = { t: now, x: e.clientX };
+  clearTimeout(tcOne);
+  tcOne = setTimeout(() => {
+    if (session && !session.ok && $("#status").classList.contains("err") && !$("#status").hidden) { playChannel(state.current, state.playlist); return; } // reintentar
+    tcShow(!tcShown());
+  }, 280);
+});
+$("#tc").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  const id = b.id;
+  if (id === "tcBack") { toggleFs(); return; }
+  if (id === "tcPlay") tcPlayPause();
+  else if (id === "tcB") tcSeekBy(-10);
+  else if (id === "tcF") tcSeekBy(10);
+  else if (id === "tcFav") toggleFav(favTarget(state.current));
+  else if (id === "tcPrev") { if (tcLive()) zap(-1); else stepEpisode(-1); }
+  else if (id === "tcNext") { if (tcLive()) zap(1); else stepEpisode(1); }
+  tcShow(true, video.paused);
+});
+const tcBar = $("#tcBar");
+function tcAt(e) {
+  const r = tcBar.getBoundingClientRect(), d = skDur();
+  return d ? Math.max(0, Math.min(d - 2, ((e.clientX - r.left) / r.width) * d)) : 0;
+}
+tcBar.addEventListener("pointerdown", (e) => {
+  if (!skDur()) return;
+  try { tcBar.setPointerCapture(e.pointerId); } catch {}
+  clearTimeout(tcHide);
+  tcPend = tcAt(e);
+  tcUpdate();
+});
+tcBar.addEventListener("pointermove", (e) => { if (tcPend !== null) { tcPend = tcAt(e); tcUpdate(); } });
+function tcBarEnd(apply) {
+  if (tcPend === null) return;
+  const t = tcPend;
+  tcPend = null;
+  if (apply) { try { video.currentTime = t; } catch {} }
+  tcShow(true, video.paused);
+  tcUpdate();
+}
+tcBar.addEventListener("pointerup", () => tcBarEnd(true));
+tcBar.addEventListener("pointercancel", () => tcBarEnd(false));
+
+// Título largo: al enfocarlo (mando) o pasar el ratón por encima se desplaza para poder leerlo entero
+let mqEl = null;
+function mqOff() { if (mqEl) { mqEl.classList.remove("mq"); mqEl = null; } }
+function mqOn(e) {
+  const ch = e.target.closest && e.target.closest(".ch");
+  const el = ch && ch.querySelector(".ptxt b, .meta b");
+  if (!el || el === mqEl) return;
+  mqOff();
+  const d = el.scrollWidth - el.clientWidth;
+  if (d > 4) { el.style.setProperty("--d", d + "px"); el.style.setProperty("--t", (2.5 + d / 45).toFixed(1) + "s"); el.classList.add("mq"); mqEl = el; }
+}
+document.addEventListener("focusin", mqOn);
+document.addEventListener("mouseover", mqOn);
+document.addEventListener("focusout", (e) => { if (e.target.closest && e.target.closest(".ch")) mqOff(); });
+document.addEventListener("mouseout", (e) => { const ch = e.target.closest && e.target.closest(".ch"); if (ch && !ch.matches(":focus")) mqOff(); });
+
 /* ---------- Eventos de la pantalla principal ---------- */
 $("#tabs").addEventListener("click", (e) => {
   const b = e.target.closest(".tab");
@@ -5392,7 +5818,7 @@ $("#tabs").addEventListener("click", (e) => {
 // En la tele, el teclado en pantalla se abría solo al llegar al buscador y se quedaba con las flechas.
 // En la app de Android el buscador queda «de solo lectura» hasta pulsar OK (o tocarlo): así se puede pasar por encima.
 const srch = $("#search");
-function srchGuard(on) { if (isNative()) { srch.readOnly = on; srch.inputMode = on ? "none" : "text"; } }
+function srchGuard(on) { if (isNative() && !document.body.classList.contains("mob")) { srch.readOnly = on; srch.inputMode = on ? "none" : "text"; } }
 function srchOpen() { srch.blur(); srchGuard(false); srch.focus(); }
 srchGuard(true);
 srch.addEventListener("blur", () => { srchGuard(true); if (!srch.value) document.body.classList.remove("psearch"); });
@@ -5772,7 +6198,7 @@ $("#themeDlg").addEventListener("close", () => { applyTheme(themeSaved); renderS
 
 /* ---------- Inicio y ajustes ---------- */
 const ovOpen = () => !$("#home").hidden || !$("#settings").hidden || !$("#detail").hidden || !$("#eps").hidden;
-function hideOverlays() { $("#home").hidden = true; $("#settings").hidden = true; if (!$("#detail").hidden) { det.seq++; $("#detail").hidden = true; } if (!$("#eps").hidden) { eps.seq++; $("#eps").hidden = true; } }
+function hideOverlays() { $("#home").hidden = true; $("#settings").hidden = true; if (!$("#detail").hidden) { det.seq++; $("#detail").hidden = true; } if (!$("#eps").hidden) { eps.seq++; $("#eps").hidden = true; } mnavSync(); }
 function hue(str) { let h = 0; for (const c of String(str)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
 let shelfCur = [];
 function renderHome() {
@@ -5790,7 +6216,7 @@ function renderHome() {
   shelfCur = [];
   for (const tab of ["movie", "series"]) for (const [t, it] of contList(tab, true)) shelfCur.push({ t, it, tab });
   shelfCur.sort((a, b) => b.t - a.t);
-  shelfCur = shelfCur.slice(0, 4);
+  shelfCur = shelfCur.slice(0, document.body.classList.contains("mob") ? 10 : 4);
   $("#shelf").hidden = !shelfCur.length;
   $("#shelfRow").innerHTML = shelfCur.map((c, i) => {
     const pr = progInfo(c.it, true) || { text: "", pct: 0 };
@@ -5798,18 +6224,21 @@ function renderHome() {
     const img = c.it.logo ? `<img src="${esc(c.it.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : "";
     return `<button class="card" type="button" data-i="${i}"><span class="pic" style="background:linear-gradient(135deg,hsl(${h},45%,32%),hsl(${(h + 40) % 360},45%,16%))">${img}<b>${esc(c.it.name)}</b>${pr.pct > 0 && pr.pct < 100 ? `<span class="bar"><i style="width:${pr.pct.toFixed(1)}%"></i></span>` : ""}</span><small>${esc(pr.text)}</small></button>`;
   }).join("");
+  renderShelfX();
 }
 function showHome() {
   skHide(true);
   $("#settings").hidden = true;
   renderHome();
   $("#home").hidden = false;
+  mnavSync();
   focusEl($('#homeTiles .tile[data-go="live"]') || $("#homeTiles .tile"));
 }
 function showSettings() {
   renderSettings();
   $("#home").hidden = true;
   $("#settings").hidden = false;
+  mnavSync();
   focusEl($("#setTiles .tile"));
 }
 function renderSettings() {
@@ -5896,6 +6325,7 @@ setInterval(() => { if (!$("#home").hidden) $("#homeClock").textContent = new Da
 function backMain() {
   const a = document.activeElement, cl = a && a.classList, pm = state.tab !== "live";
   if (state.show) closeShow();
+  else if (document.body.classList.contains("mob")) showHome();
   else if (pm && document.body.classList.contains("pgrp") && cl && cl.contains("grp")) closePgrp(true);
   else if (!pm && cl && (cl.contains("ch") || cl.contains("more"))) focusGroup();
   else if (a && (a.id === "btnFs" || a.id === "btnFav")) focusChannelList();
