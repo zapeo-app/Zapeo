@@ -473,9 +473,10 @@ dialog .actions.wrap { flex-wrap: wrap; justify-content: flex-start; }
 }
 @media (prefers-reduced-motion: reduce) { #osd { transition: none; } }
 
-/* Título largo: al enfocarlo se desplaza para poder leerlo entero */
-@keyframes mq { 0%, 18% { text-indent: 0; } 82%, 100% { text-indent: calc(var(--d) * -1); } }
-.mq { text-overflow: clip !important; animation: mq var(--t, 6s) ease-in-out infinite alternate; }
+/* Título largo: al enfocarlo se desplaza para poder leerlo entero (se mueve el span interior con transform) */
+@keyframes mq { 0%, 18% { transform: translate3d(0, 0, 0); } 82%, 100% { transform: translate3d(calc(var(--d) * -1), 0, 0); } }
+.mq { text-overflow: clip !important; }
+.mq > span { display: inline-block; white-space: nowrap; will-change: transform; animation: mq var(--t, 6s) ease-in-out infinite alternate; }
 
 /* Barra inferior, solo en móvil */
 #mnav, #tcl, #shelfX { display: none; }
@@ -493,7 +494,7 @@ body.mob #mnav {
 #mnav button.on { color: var(--accent); }
 body.mob.pfs #mnav { display: none; }
 body.mob .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
-body.mob .ov { font-size: 14px; padding: 16px 14px; gap: 16px; }
+body.mob .ov { font-size: 14px; padding: calc(16px + var(--sat)) calc(14px + var(--edge)) 16px; gap: 16px; }
 body.mob #home, body.mob #settings { bottom: calc(58px + env(safe-area-inset-bottom)); }
 body.mob #detail, body.mob #eps { z-index: 42; padding: 0; gap: 0; }
 /* Inicio */
@@ -530,31 +531,42 @@ body.mob .stiles .tile { min-height: 64px; font-size: 16px; padding: 10px 14px; 
 body.mob .stiles .tile svg { width: 28px; height: 28px; }
 body.mob .ovhead h1 { font-size: 24px; }
 body.mob .attrib { margin: 6px 0 0; font-size: 12px; }
-/* Canales, películas y series: categorías como fila deslizable y lista a pantalla completa */
-body.mob main, body.mob #main.tab-movie, body.mob #main.tab-series { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+/* Canales, películas y series: cabecera con la categoría y la búsqueda; las categorías se abren a pantalla completa */
+body.mob { --sat: env(safe-area-inset-top, 0px); --edge: 0px; }
+body.mob.native { --sat: max(env(safe-area-inset-top, 0px), 34px); --edge: 12px; }
+body.mob main, body.mob #main.tab-movie, body.mob #main.tab-series { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
 body.mob .stage, body.mob #main.tab-movie .stage, body.mob #main.tab-series .stage {
   position: fixed; left: -300vw; top: 0; width: 640px; height: 360px; padding: 0; border: 0; overflow: visible;
 }
-body.mob #main > .panel:nth-child(1), body.mob #main.tab-movie > .panel:nth-child(1), body.mob #main.tab-series > .panel:nth-child(1),
-body.mob.pgrp #main.tab-movie > .panel:nth-child(1), body.mob.pgrp #main.tab-series > .panel:nth-child(1) {
-  display: block; position: static; width: auto; box-shadow: none; background: none; border: 0; z-index: auto;
+body.mob #main > .panel:nth-child(1), body.mob #main.tab-movie > .panel:nth-child(1), body.mob #main.tab-series > .panel:nth-child(1) { display: none; }
+body.mob.pgrp #main > .panel:nth-child(1), body.mob.pgrp #main.tab-movie > .panel:nth-child(1), body.mob.pgrp #main.tab-series > .panel:nth-child(1) {
+  display: flex; position: fixed; left: 0; right: 0; top: 0; bottom: calc(58px + env(safe-area-inset-bottom)); width: auto; z-index: 36;
+  background-color: var(--bg); background-image: var(--bgimg); box-shadow: none; border: 0; padding: var(--sat) var(--edge) 0;
 }
+#mCatHead { display: none; }
+body.mob #mCatHead { display: flex; align-items: center; gap: 12px; padding: 10px 12px 6px; font-size: 20px; font-weight: 700; }
+#mCatBack { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.07); display: grid; place-items: center; padding: 0; }
+#mCatBack svg { width: 22px; height: 22px; }
 body.mob #main > .panel:nth-child(1) h2 { display: none; }
-body.mob #grplist { display: flex; gap: 8px; overflow: auto hidden; padding: 10px 12px 4px; flex: none; scrollbar-width: none; }
-body.mob #grplist::-webkit-scrollbar { display: none; }
-body.mob .grp { flex: none; width: auto; margin: 0; padding: 8px 14px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); gap: 8px; font-size: 14px; }
-body.mob .grp span:first-child { overflow: visible; }
-body.mob .grp.active { background: rgba(var(--accent-rgb), .25); border-color: var(--accent); box-shadow: none; }
-body.mob .grp .n { font-size: 12px; }
-body.mob #main > .panel:nth-child(2) { border: 0; }
-body.mob #main.tab-movie > .panel:nth-child(2), body.mob #main.tab-series > .panel:nth-child(2) { grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "title bar" "find find" "list list"; }
-body.mob.pmode #pchips, body.mob #pRef { display: none; }
-body.mob.pmode #pbar { padding: 6px 12px 0 0; justify-content: flex-end; flex-wrap: nowrap; }
-body.mob .panel h2 { padding: 8px 14px 4px; }
-body.mob #main.tab-movie #chTitle, body.mob #main.tab-series #chTitle { font-size: 22px; padding: 6px 14px 4px; }
+body.mob #grplist { display: block; overflow: hidden auto; padding: 4px 10px 14px; flex: 1; }
+body.mob .grp { width: 100%; margin: 0; padding: 15px 14px; border-radius: 10px; font-size: 17px; gap: 12px; border-bottom: 1px solid rgba(255,255,255,.07); border-radius: 0; }
+body.mob .grp.active { background: rgba(var(--accent-rgb), .18); color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+body.mob .grp .n { font-size: 14px; }
+body.mob #main > .panel:nth-child(2) { border: 0; padding: var(--sat) var(--edge) 0; }
+#mhead { display: none; }
+body.mob #mhead { display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px; grid-area: mhead; }
+#mCat { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); text-align: left; font-weight: 600; font-size: 16px; }
+#mCat span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#mCat small { color: var(--muted); font-weight: 400; font-size: 14px; }
+#mCat svg { width: 18px; height: 18px; flex: none; }
+#mFind { width: 48px; height: 48px; flex: none; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); display: grid; place-items: center; padding: 0; }
+#mFind svg { width: 22px; height: 22px; }
+body.mob #chTitle, body.mob #pchips, body.mob #pRef, body.mob #pGrp, body.mob #pFind, body.mob #pHome { display: none; }
+body.mob #main.tab-movie > .panel:nth-child(2), body.mob #main.tab-series > .panel:nth-child(2) { grid-template-rows: auto auto auto minmax(0, 1fr); grid-template-areas: "mhead mhead" "bar bar" "find find" "list list"; }
+body.mob.pmode #pbar { padding: 0 12px 2px; justify-content: flex-start; flex-wrap: nowrap; }
 body.mob #pbar .btn { padding: 8px 14px; font-size: 14px; }
-body.mob #pGrp, body.mob #pFind, body.mob #pHome { display: none; }
-body.mob #main.tab-movie .searchwrap, body.mob #main.tab-series .searchwrap { display: block; }
+body.mob .searchwrap, body.mob #main.tab-movie .searchwrap, body.mob #main.tab-series .searchwrap { display: none; }
+body.mob.psearch .searchwrap, body.mob.psearch #main.tab-movie .searchwrap, body.mob.psearch #main.tab-series .searchwrap { display: block; }
 body.mob .searchwrap { padding: 4px 12px 8px; }
 body.mob #search { padding: 11px 14px; font-size: 16px; border-radius: 10px; }
 body.mob .scroll { max-height: none; }
@@ -567,8 +579,10 @@ body.mob #chlist.posters { grid-template-columns: repeat(auto-fill, minmax(96px,
 body.mob .ptxt b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 12.5px; line-height: 1.25; }
 body.mob .row.poster .star { display: block; padding: 2px 8px; font-size: 15px; }
 body.mob .pimg { font-size: 28px; }
+body.mob .poster .ch:focus .pimg, body.mob .poster .ch:focus-visible .pimg { border-color: transparent; transform: none; box-shadow: none; }
+body.mob .row.poster.playing .pimg { border-color: transparent; }
 /* Ficha y episodios */
-body.mob .dwrap { flex-direction: column; gap: 16px; padding: 20px 16px 28px; }
+body.mob .dwrap { flex-direction: column; gap: 16px; padding: calc(20px + var(--sat)) calc(16px + var(--edge)) 28px; }
 body.mob .dleft { width: 100%; flex-direction: row; gap: 14px; align-items: flex-end; }
 body.mob .dposter { width: 38%; flex: none; }
 body.mob .dbtns { flex: 1; min-width: 0; gap: 8px; }
@@ -582,7 +596,7 @@ body.mob .dacts { grid-template-columns: repeat(4, minmax(0, 1fr)); max-height: 
 body.mob .act .ph { width: 58px; height: 58px; }
 body.mob .act b { font-size: 12px; }
 body.mob .act small { font-size: 11px; }
-body.mob .ewrap { flex-direction: column; height: 100%; padding: 14px 12px 8px; gap: 10px; }
+body.mob .ewrap { flex-direction: column; height: 100%; padding: calc(14px + var(--sat)) calc(12px + var(--edge)) 8px; gap: 10px; }
 body.mob .eleft { width: 100%; flex-direction: row; align-items: center; gap: 12px; }
 body.mob .eleft .dposter { width: 64px; flex: none; }
 body.mob .eleft h2 { font-size: 18px; flex: 1; min-width: 0; }
@@ -604,7 +618,7 @@ body.touch.pfs #tcl, body.touch .screen:fullscreen #tcl { display: block; }
 #tcl.show .tc { opacity: 1; pointer-events: auto; }
 .tc button { border: 0; background: none; color: #fff; display: grid; place-items: center; padding: 0; -webkit-tap-highlight-color: transparent; }
 .tc svg { width: 100%; height: 100%; }
-.tc-top { display: flex; align-items: center; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-top)); background: linear-gradient(180deg, rgba(0,0,0,.7), transparent); padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+.tc-top { display: flex; align-items: center; gap: 8px; padding: calc(10px + var(--sat, env(safe-area-inset-top, 0px))) 12px 10px; background: linear-gradient(180deg, rgba(0,0,0,.7), transparent); padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
 .tc-top button { width: 44px; height: 44px; flex: none; }
 .tc-top button svg { width: 26px; height: 26px; }
 .tc-t { flex: 1; min-width: 0; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
@@ -656,11 +670,16 @@ body.touch.pfs #tcl, body.touch .screen:fullscreen #tcl { display: block; }
 
 <main id="main" class="tab-live">
   <section class="panel" aria-label="Categorías">
+    <div id="mCatHead"><button type="button" id="mCatBack" aria-label="Volver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><span>Categorías</span></div>
     <h2>Categorías</h2>
     <div class="scroll" id="grplist"></div>
   </section>
 
   <section class="panel" aria-label="Lista">
+    <div id="mhead">
+      <button type="button" id="mCat" aria-label="Elegir categoría"><span id="mCatName">Canales</span><small id="mCatN"></small><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button type="button" id="mFind" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+    </div>
     <h2 id="chTitle">Canales</h2>
     <div id="pchips"><span class="chip" id="chipSort"></span><span class="chip" id="chipTotal"></span></div>
     <div id="pbar" role="toolbar" aria-label="Opciones">
@@ -3227,7 +3246,7 @@ var qrcode = function() {
 <script>
 "use strict";
 
-const VERSION = "0.21.0";
+const VERSION = "0.21.1";
 
 /* ---------- Parser M3U y clasificación ---------- */
 // PARSER_START
@@ -4065,9 +4084,6 @@ function renderGroups() {
       $("#grplist").innerHTML = items.map((g) =>
         `<button class="grp${g.key === state.group[t] ? " active" : ""}" data-g="${esc(g.key)}"><span>${esc(g.name)}</span><span class="n">${g.n}</span></button>`
       ).join("");
-      // móvil: la categoría activa queda a la vista en la fila deslizable
-      const a = $("#grplist .grp.active"), g = $("#grplist");
-      if (a && document.body.classList.contains("mob")) g.scrollLeft = Math.max(0, a.offsetLeft - (g.clientWidth - a.offsetWidth) / 2);
     }
   );
 }
@@ -4108,16 +4124,17 @@ function rowHTML(x, i) {
     const pbar = pr && pr.pct > 0 && pr.pct < 100 ? `<span class="pbar"><i style="width:${pr.pct.toFixed(1)}%"></i></span>` : "";
     const seen = pr && pr.pct >= 100 ? `<span class="pseen" aria-hidden="true">✓</span>` : "";
     return `<div class="row poster${isPlaying(x) ? " playing" : ""}">
-    <button class="ch" data-i="${i}"><span class="pimg" style="background:linear-gradient(160deg,hsl(${h},40%,30%),hsl(${(h + 40) % 360},40%,15%))">${logoHTML(x, name)}${seen}${pbar}</span><span class="ptxt"><b>${esc(name)}</b><small>${esc(sub)}</small></span></button>
+    <button class="ch" data-i="${i}"><span class="pimg" style="background:linear-gradient(160deg,hsl(${h},40%,30%),hsl(${(h + 40) % 360},40%,15%))">${logoHTML(x, name)}${seen}${pbar}</span><span class="ptxt"><b><span>${esc(name)}</span></b><small>${esc(sub)}</small></span></button>
     ${star ? `<button class="star${fav ? " on" : ""}" data-star="${i}" tabindex="-1" aria-label="Favorito">${fav ? "★" : "☆"}</button>` : ""}
   </div>`;
   }
   return `<div class="row${isPlaying(x) ? " playing" : ""}">
-    <button class="ch" data-i="${i}"><span class="logo">${logoHTML(x, name)}</span><span class="meta"><b>${esc(name)}</b><small>${esc(sub)}</small>${bar}</span></button>
+    <button class="ch" data-i="${i}"><span class="logo">${logoHTML(x, name)}</span><span class="meta"><b><span>${esc(name)}</span></b><small>${esc(sub)}</small>${bar}</span></button>
     ${star ? `<button class="star${fav ? " on" : ""}" data-star="${i}" tabindex="-1" aria-label="Favorito">${fav ? "★" : "☆"}</button>` : ""}
   </div>`;
 }
 
+function setMCat(name, n) { $("#mCatName").textContent = name; $("#mCatN").textContent = n === undefined ? "" : n; }
 function renderList() {
   keepFocus(
     (a) => (a.dataset && a.dataset.back !== undefined ? ".ch[data-back]" : a.dataset && a.dataset.i && a.classList.contains("ch") ? `.ch[data-i="${a.dataset.i}"]` : null),
@@ -4133,6 +4150,7 @@ function renderList() {
       if (!state.channels.length) {
         state.view = [];
         $("#chTitle").textContent = "Lista";
+        setMCat("Lista");
         box.innerHTML = advOn()
           ? `<div class="empty"><h3>Aún no hay lista</h3>
           <p>Añade tu lista M3U con su dirección, desde un archivo o desde el móvil. La app no incluye canales.</p>
@@ -4150,6 +4168,7 @@ function renderList() {
         const s = state.show;
         state.view = s.episodes;
         $("#chTitle").textContent = s.name;
+        setMCat(s.name, s.episodes.length);
         let html = `<button class="ch back" data-back>← Volver a series</button>`;
         let lastSeason = null;
         s.episodes.forEach((e, i) => {
@@ -4167,6 +4186,7 @@ function renderList() {
       const g = state.group[state.tab];
       const label = g === "__all" ? TAB_NAMES[state.tab] : g === "__fav" ? "Favoritos" : g === "__cont" ? "Continuar viendo" : g;
       $("#chTitle").textContent = state.tab === "live" ? `${label} · ${list.length}` : label;
+      setMCat(label, list.length);
       $("#chipSort").textContent = "Orden: " + SORT_NAMES[cfg.sort];
       $("#chipTotal").textContent = "Total: " + list.length;
 
@@ -5801,7 +5821,9 @@ function mqOn(e) {
   const el = ch && ch.querySelector(".ptxt b, .meta b");
   if (!el || el === mqEl) return;
   mqOff();
-  const d = el.scrollWidth - el.clientWidth;
+  const sp = el.firstElementChild;
+  if (!sp) return;
+  const d = Math.ceil(sp.getBoundingClientRect().width - el.clientWidth);
   if (d > 4) { el.style.setProperty("--d", d + "px"); el.style.setProperty("--t", (2.5 + d / 45).toFixed(1) + "s"); el.classList.add("mq"); mqEl = el; }
 }
 document.addEventListener("focusin", mqOn);
@@ -5830,6 +5852,13 @@ $("#search").addEventListener("input", (e) => {
   renderList();
 });
 
+$("#mCat").addEventListener("click", openPgrp);
+$("#mCatBack").addEventListener("click", () => closePgrp());
+$("#mFind").addEventListener("click", () => {
+  const on = document.body.classList.toggle("psearch");
+  if (on) srch.focus();
+  else if (state.query) { srch.value = ""; state.query = ""; state.shown = pageSize(); renderList(); }
+});
 $("#grplist").addEventListener("click", (e) => {
   const b = e.target.closest(".grp");
   if (!b) return;
@@ -5838,7 +5867,7 @@ $("#grplist").addEventListener("click", (e) => {
   state.shown = pageSize();
   $$("#grplist .grp").forEach((x) => x.classList.toggle("active", x === b));
   renderList();
-  if (state.tab !== "live") { closePgrp(); focusChannelList(); }
+  if (state.tab !== "live" || document.body.classList.contains("mob")) { closePgrp(); focusChannelList(); }
 });
 
 $("#chlist").addEventListener("click", async (e) => {
@@ -6324,7 +6353,8 @@ setInterval(() => { if (!$("#home").hidden) $("#homeClock").textContent = new Da
 // Atrás en la pantalla principal: sube un nivel cada vez y acaba en el inicio.
 function backMain() {
   const a = document.activeElement, cl = a && a.classList, pm = state.tab !== "live";
-  if (state.show) closeShow();
+  if (document.body.classList.contains("mob") && document.body.classList.contains("pgrp")) closePgrp();
+  else if (state.show) closeShow();
   else if (document.body.classList.contains("mob")) showHome();
   else if (pm && document.body.classList.contains("pgrp") && cl && cl.contains("grp")) closePgrp(true);
   else if (!pm && cl && (cl.contains("ch") || cl.contains("more"))) focusGroup();
