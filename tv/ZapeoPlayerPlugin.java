@@ -294,6 +294,37 @@ public class ZapeoPlayerPlugin extends Plugin {
         });
     }
 
+    /** Pantalla inmersiva en el móvil: oculta la barra de estado (hora, batería…) y la de navegación mientras se reproduce. */
+    @PluginMethod
+    public void immersive(final PluginCall call) {
+        final boolean on = call.getData().optBoolean("on", false);
+        runOnUi(call, new Runnable() {
+            @Override
+            public void run() {
+                android.view.Window w = getActivity().getWindow();
+                if (android.os.Build.VERSION.SDK_INT >= 30) {
+                    android.view.WindowInsetsController c = w.getInsetsController();
+                    if (c != null) {
+                        if (on) {
+                            c.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                            c.hide(android.view.WindowInsets.Type.systemBars());
+                        } else {
+                            c.show(android.view.WindowInsets.Type.systemBars());
+                        }
+                    }
+                } else {
+                    View d = w.getDecorView();
+                    d.setSystemUiVisibility(on
+                            ? (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
+                            : View.SYSTEM_UI_FLAG_VISIBLE);
+                }
+                call.resolve();
+            }
+        });
+    }
+
     @PluginMethod
     public void stop(final PluginCall call) {
         runOnUi(call, new Runnable() {
