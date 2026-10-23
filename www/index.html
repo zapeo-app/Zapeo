@@ -3246,7 +3246,7 @@ var qrcode = function() {
 <script>
 "use strict";
 
-const VERSION = "0.21.1";
+const VERSION = "0.21.2";
 
 /* ---------- Parser M3U y clasificación ---------- */
 // PARSER_START
@@ -5732,8 +5732,13 @@ function lockLandscape(on) {
     else if (!on && o.unlock) o.unlock();
   } catch {}
 }
+function immersive(on) {
+  if (!isNative() || !document.body.classList.contains("touch")) return;
+  try { if (ZP && ZP.immersive) { const r = ZP.immersive({ on }); if (r && r.catch) r.catch(() => {}); } } catch {}
+}
 function tcOnFs() {
   if (!document.body.classList.contains("touch")) return;
+  immersive(isFs());
   if (isFs()) { tcShow(true); lockLandscape(true); }
   else { tcShow(false); lockLandscape(false); }
 }
@@ -5824,10 +5829,16 @@ function mqOn(e) {
   const sp = el.firstElementChild;
   if (!sp) return;
   const d = Math.ceil(sp.getBoundingClientRect().width - el.clientWidth);
-  if (d > 4) { el.style.setProperty("--d", d + "px"); el.style.setProperty("--t", (2.5 + d / 45).toFixed(1) + "s"); el.classList.add("mq"); mqEl = el; }
+  if (d > 1) { el.style.setProperty("--d", d + "px"); el.style.setProperty("--t", (2.5 + d / 45).toFixed(1) + "s"); el.classList.add("mq"); mqEl = el; }
 }
 document.addEventListener("focusin", mqOn);
-document.addEventListener("mouseover", mqOn);
+document.addEventListener("mouseover", (e) => {
+  // en la tele, al moverse la lista puede llegar un «mouseover» falso sobre otro elemento y robar el desplazamiento al enfocado
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  const a = document.activeElement;
+  if (a && a.classList && a.classList.contains("ch")) return;
+  mqOn(e);
+});
 document.addEventListener("focusout", (e) => { if (e.target.closest && e.target.closest(".ch")) mqOff(); });
 document.addEventListener("mouseout", (e) => { const ch = e.target.closest && e.target.closest(".ch"); if (ch && !ch.matches(":focus")) mqOff(); });
 
