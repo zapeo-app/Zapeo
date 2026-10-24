@@ -3239,7 +3239,7 @@ var qrcode = function() {
 <script>
 "use strict";
 
-const VERSION = "0.21.4";
+const VERSION = "0.21.5";
 
 /* ---------- Parser M3U y clasificación ---------- */
 // PARSER_START
@@ -5603,7 +5603,8 @@ function envTouch() { return (navigator.maxTouchPoints || 0) > 0 || (window.matc
 function applyMode() {
   const f = store.get("zapeo.mob", ""); // "1" fuerza el modo móvil, "0" lo desactiva
   const side = Math.min(screen.width || innerWidth, screen.height || innerHeight);
-  const mob = f === "1" ? true : f === "0" ? false : envTouch() && side <= 500;
+  const coarse = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches); // tablet: dedo como puntero principal
+  const mob = f === "1" ? true : f === "0" ? false : envTouch() && (side <= 500 || (coarse && side <= 900));
   const touch = mob || touchSeen || (envTouch() && side <= 900);
   document.body.classList.toggle("mob", mob);
   document.body.classList.toggle("touch", touch);
