@@ -3239,7 +3239,7 @@ var qrcode = function() {
 <script>
 "use strict";
 
-const VERSION = "0.21.5";
+const VERSION = "0.22.0";
 
 /* ---------- Parser M3U y clasificación ---------- */
 // PARSER_START
@@ -3254,6 +3254,8 @@ function parseM3U(text, sourceUrl) {
   }
 
   const out = [];
+  const hd = (String(text).match(/^\s*#EXTM3U([^\r\n]*)/) || [])[1] || "";
+  out.epgUrls = ((hd.match(/(?:url-tvg|x-tvg-url)="([^"]*)"/i) || [])[1] || "").split(",").map((u) => u.trim()).filter((u) => /^https?:\/\//i.test(u));
   let cur = null;
   let pendingGroup = "";
   const attrRe = /([\w-]+)="([^"]*)"/g;
@@ -3280,13 +3282,15 @@ function parseM3U(text, sourceUrl) {
     } else {
       if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(line)) continue; // no es una URL
       const c = cur || { attrs: {}, name: "" };
-      out.push({
+      const ch = {
         id: out.length,
         name: c.name || c.attrs["tvg-name"] || line,
         group: c.attrs["group-title"] || pendingGroup || "Sin grupo",
         logo: c.attrs["tvg-logo"] || "",
         url: line,
-      });
+      };
+      if (c.attrs["tvg-id"]) ch.tvg = c.attrs["tvg-id"].trim().toLowerCase();
+      out.push(ch);
       cur = null;
       pendingGroup = "";
     }
@@ -3362,7 +3366,7 @@ function buildPlaylist(text, sourceUrl) {
   for (const c of channels) if (c.type !== "series") byType[c.type].push(c);
   const groups = {};
   for (const t of ["live", "movie", "series"]) groups[t] = countGroups(byType[t]);
-  return { channels, byType, groups, count: channels.length };
+  return { channels, byType, groups, count: channels.length, epgUrls: channels.epgUrls || [] };
 }
 // PARSER_END
 
@@ -3546,6 +3550,7 @@ function applyBuilt(b, { keep = false } = {}) {
   state.show = null;
   state.shown = pageSize();
   renderAll();
+  epgStart(b).catch(() => {});
 }
 
 function clearPlaylist() {
@@ -4089,6 +4094,167 @@ function renderGroups() {
   );
 }
 
+/* ---------- Guía de programación (EPG, XMLTV) ---------- */
+const epg = {
+  data: new Map(),   // id de canal (tvg-id en minúsculas) → [[inicio, fin, título], …] en ms
+  on: false,
+  listId: "",
+  loading: false,
+};
+const EPG_TTL = 6 * 3600e3;       // se vuelve a bajar pasadas 6 h
+const EPG_BACK = 2 * 3600e3;      // se guarda desde 2 h atrás…
+const EPG_AHEAD = 36 * 3600e3;    // …hasta 36 h por delante
+function xmltvTime(t) {
+  const m = /^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)?\s*([+-]\d{4}|Z)?/.exec(t || "");
+  if (!m) return NaN;
+  let ms = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  if (m[7] && m[7] !== "Z") ms -= (m[7][0] === "-" ? -1 : 1) * ((+m[7].slice(1, 3)) * 60 + (+m[7].slice(3, 5))) * 60000;
+  return ms;
+}
+const xmlText = (t) => t.replace(/&(#x?[0-9a-f]+|amp|lt|gt|quot|apos);/gi, (_, e) => {
+  if (e[0] === "#") { const n = e[1].toLowerCase() === "x" ? parseInt(e.slice(2), 16) : +e.slice(1); try { return String.fromCodePoint(n); } catch { return ""; } }
+  return { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" }[e.toLowerCase()];
+}).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
+// Lee programas de un trozo de XML. Devuelve el resto sin procesar.
+function epgChunk(buf, want, now, out) {
+  const re = /<programme\b([^>]*)>([\s\S]*?)<\/programme>/g;
+  let m, last = 0;
+  while ((m = re.exec(buf))) {
+    last = re.lastIndex;
+    const a = m[1];
+    const ch = (/channel="([^"]*)"/.exec(a) || [])[1];
+    if (!ch) continue;
+    const k = xmlText(ch).trim().toLowerCase();
+    if (!want.has(k)) continue;
+    const st = xmltvTime((/start="([^"]*)"/.exec(a) || [])[1]);
+    const en = xmltvTime((/stop="([^"]*)"/.exec(a) || [])[1]);
+    if (!(st < en) || en < now - EPG_BACK || st > now + EPG_AHEAD) continue;
+    const t = /<title\b[^>]*>([\s\S]*?)<\/title>/.exec(m[2]);
+    const title = t ? xmlText(t[1]).trim() : "";
+    if (!title) continue;
+    (out[k] || (out[k] = [])).push([st, en, title]);
+  }
+  // si queda un <programme> a medias, se conserva desde ahí
+  const open = buf.lastIndexOf("<programme");
+  if (open >= last) return buf.slice(open);
+  return buf.slice(Math.max(last, buf.length - 20));
+}
+async function epgBytes(u) {
+  try {
+    const r = await fetch(u);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.body ? r.body : new Blob([await r.arrayBuffer()]).stream();
+  } catch (e) {
+    const H = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.CapacitorHttp;
+    if (!H) throw e;
+    const r = await H.get({ url: u, responseType: "blob" });
+    if (r.status < 200 || r.status >= 300) throw new Error("HTTP " + r.status);
+    const bin = atob(String(r.data));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes]).stream();
+  }
+}
+async function epgDownload(u, want) {
+  let stream = await epgBytes(u);
+  const reader0 = stream.getReader();
+  const first = await reader0.read();
+  const gz = first.value && first.value[0] === 0x1f && first.value[1] === 0x8b;
+  let pending = first;
+  const src = new ReadableStream({
+    async pull(c) { const r = pending || (await reader0.read()); pending = null; if (r.done) c.close(); else c.enqueue(r.value); },
+    cancel() { return reader0.cancel(); },
+  });
+  if (gz && typeof DecompressionStream === "undefined") throw new Error("sin gzip");
+  const rd = (gz ? src.pipeThrough(new DecompressionStream("gzip")) : src).getReader();
+  const dec = new TextDecoder("utf-8");
+  const now = Date.now(), out = {};
+  let buf = "";
+  for (;;) {
+    const r = await rd.read();
+    if (r.done) break;
+    buf = epgChunk(buf + dec.decode(r.value, { stream: true }), want, now, out);
+    await new Promise((res) => setTimeout(res, 0)); // deja respirar a la interfaz
+  }
+  epgChunk(buf + dec.decode(), want, now, out);
+  return out;
+}
+function epgSources(urls, listUrl) {
+  const set = new Set(urls || []);
+  const m = /^(https?:\/\/[^/]+)\/get\.php\?(.*)$/i.exec(listUrl || "");
+  if (m) {
+    const q = new URLSearchParams(m[2]);
+    if (q.get("username") && q.get("password")) set.add(`${m[1]}/xmltv.php?username=${encodeURIComponent(q.get("username"))}&password=${encodeURIComponent(q.get("password"))}`);
+  }
+  return Array.from(set).slice(0, 3);
+}
+function epgApply(obj) {
+  epg.data = new Map();
+  for (const k in obj) epg.data.set(k, obj[k].sort((a, b) => a[0] - b[0]));
+  epg.on = epg.data.size > 0;
+}
+async function epgStart(b) {
+  const id = lists.current;
+  epg.listId = id;
+  epg.data = new Map(); epg.on = false;
+  const want = new Set();
+  for (const c of b.byType.live) if (c.tvg) want.add(c.tvg);
+  if (!want.size) return;
+  const l = findList(id) || {};
+  const urls = epgSources(b.epgUrls, l.url);
+  if (!urls.length) return;
+  const key = "epg:" + id;
+  let saved = null;
+  try { saved = JSON.parse((await cache.get(key)) || "null"); } catch {}
+  if (saved && saved.d) { epgApply(saved.d); epgRefresh(); }
+  if (saved && Date.now() - saved.t < EPG_TTL) return;
+  if (epg.loading) return;
+  epg.loading = true;
+  try {
+    const all = {};
+    for (const u of urls) {
+      try {
+        const o = await withTimeout(epgDownload(u, want), 120000);
+        for (const k in o) all[k] = (all[k] || []).concat(o[k]);
+      } catch (e) { /* una guía que falla no impide usar las demás */ }
+    }
+    if (epg.listId !== id) return;
+    if (Object.keys(all).length) {
+      await cache.set(key, JSON.stringify({ t: Date.now(), d: all }));
+      epgApply(all);
+      epgRefresh();
+    }
+  } finally { epg.loading = false; }
+}
+// Programa actual y siguiente de un canal
+function epgNow(x, t = Date.now()) {
+  if (!epg.on || !x.tvg) return null;
+  const a = epg.data.get(x.tvg);
+  if (!a) return null;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i][1] <= t) continue;
+    if (a[i][0] > t) return { cur: null, next: a[i] };
+    return { cur: a[i], next: a[i + 1] && a[i + 1][0] <= a[i][1] + 60000 ? a[i + 1] : null, pct: ((t - a[i][0]) / (a[i][1] - a[i][0])) * 100 };
+  }
+  return null;
+}
+const hhmm = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+function epgText(g) { return g && g.cur ? `${g.cur[2]} · hasta ${hhmm(g.cur[1])}` : ""; }
+function epgPaint() {
+  if (!epg.on || state.tab !== "live" || state.show) return;
+  $$("#chlist .row .ch[data-i]").forEach((b) => {
+    const x = state.view && state.view[+b.dataset.i];
+    if (!x) return;
+    const g = epgNow(x), sm = $("small", b), bar = $(".prog i", b);
+    if (!sm) return;
+    const t = epgText(g);
+    sm.textContent = t || x.group;
+    if (bar) bar.style.width = (g && g.cur ? g.pct : 0).toFixed(1) + "%";
+  });
+}
+function epgRefresh() { if (state.channels.length) renderList(); }
+setInterval(epgPaint, 60000);
+
 function logoHTML(x, name) {
   const initial = esc((String(name).trim()[0] || "?").toUpperCase());
   if (!x.logo) return initial;
@@ -4113,6 +4279,9 @@ function rowHTML(x, i) {
     name = x.name;
     sub = x.group;
   }
+  let eg = null;
+  if (state.tab === "live" && !state.show && x.kind !== "show") eg = epgNow(x);
+  if (eg && eg.cur) sub = epgText(eg);
   const fav = state.favs.has(favKey(x));
   const pr = progInfo(x, state.group[state.tab] === "__cont" && !state.show);
   let bar = "";
@@ -4120,6 +4289,7 @@ function rowHTML(x, i) {
     sub = state.show ? pr.text : x.kind === "show" ? pr.text : pr.text + " · " + sub;
     if (pr.pct > 0 && pr.pct < 100) bar = `<span class="prog"><i style="width:${pr.pct.toFixed(1)}%"></i></span>`;
   }
+  if (eg && eg.cur) bar = `<span class="prog"><i style="width:${eg.pct.toFixed(1)}%"></i></span>`;
   if (state.tab !== "live" && !state.show) {
     const h = hue(name);
     const pbar = pr && pr.pct > 0 && pr.pct < 100 ? `<span class="pbar"><i style="width:${pr.pct.toFixed(1)}%"></i></span>` : "";
